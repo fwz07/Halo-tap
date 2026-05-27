@@ -58,3 +58,6 @@ The app requires the following permissions to function correctly:
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Author
+FAWAZ
