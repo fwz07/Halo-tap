@@ -142,6 +142,9 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Load saved data from persistent storage
         loadSavedData()
+        
+        // Initial sync of the dashboard header with saved data
+        updateDashboardInfo()
     }
 
     private fun initializeFirebase() {
@@ -180,6 +183,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                     val lat = (slot.child("lat").value as? Number)?.toDouble()
                     val lng = (slot.child("lng").value as? Number)?.toDouble()
                     val timeRaw = slot.child("timestamp").value?.toString() ?: ""
+                    val firebaseChild = slot.child("child").value?.toString()
                     
                     if (lat != null && lng != null && lat != 0.0) {
                         // Convert to millis for accurate "latest" comparison
@@ -199,6 +203,11 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                             bestTimeMillis = currentMillis
                             latestTimeRaw = timeRaw
                             foundData = true
+                            
+                            // If Firebase has a name, let's use it to keep UI synced
+                            if (!firebaseChild.isNullOrEmpty()) {
+                                runOnUiThread { updateDashboardInfo(firebaseChild) }
+                            }
                         }
                     }
                 }
@@ -223,18 +232,16 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                             }
 
                             checkSafeZone(currentLatLng)
-                            
-                            findViewById<TextView>(R.id.tvStatus).apply {
-                                text = getString(R.string.status_firebase)
-                                setTextColor(ContextCompat.getColor(context, R.color.success_green))
-                            }
+                            updateStatusUI(getString(R.string.status_firebase), R.color.success_green)
                         }
                     }
                 }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@MainActivity, "Firebase Error: ${error.message}", Toast.LENGTH_SHORT).show()
+                runOnUiThread {
+                    updateStatusUI("Firebase Error", R.color.safety_red, false)
+                }
             }
         })
     }
@@ -334,20 +341,13 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
                             deviceMarker?.position = currentLatLng
                             googleMap?.animateCamera(CameraUpdateFactory.newLatLng(currentLatLng))
                             checkSafeZone(currentLatLng)
-                            
-                            findViewById<TextView>(R.id.tvStatus).apply {
-                                text = getString(R.string.online)
-                                setTextColor(ContextCompat.getColor(context, R.color.success_green))
-                            }
+                            updateStatusUI(getString(R.string.online), R.color.success_green)
                         }
                     }
                 }
             } catch (e: Exception) {
                 runOnUiThread {
-                    findViewById<TextView>(R.id.tvStatus).apply {
-                        text = getString(R.string.status_offline)
-                        setTextColor(ContextCompat.getColor(context, R.color.safety_red))
-                    }
+                    updateStatusUI(getString(R.string.status_offline), R.color.safety_red, false)
                 }
                 e.printStackTrace()
             }
@@ -380,7 +380,7 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         deviceMarker = googleMap?.addMarker(
             MarkerOptions()
                 .position(currentLatLng)
-                .title("HaloTap Device")
+                .title(getSharedPreferences("HaloTapPrefs", MODE_PRIVATE).getString("child_name", "Child"))
                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
         )
         if (deviceMarker == null) {
@@ -985,11 +985,33 @@ class MainActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun updateDashboardInfo(child: String) {
+    private fun updateDashboardInfo(child: String? = null) {
+        val sharedPref = getSharedPreferences("HaloTapPrefs", MODE_PRIVATE)
+        val name = child ?: sharedPref.getString("child_name", "Child") ?: "Child"
         val headerTitle = layoutDashboard.findViewById<TextView>(R.id.headerTitle)
 
-        headerTitle.text = getString(R.string.location_header_template, child)
-        deviceMarker?.title = child
+        headerTitle.text = getString(R.string.location_header_template, name)
+        
+        deviceMarker?.let {
+            it.title = name
+            if (it.isInfoWindowShown) it.showInfoWindow()
+        }
+    }
+
+    private fun updateStatusUI(status: String, colorRes: Int, isPulse: Boolean = true) {
+        val tvStatus = findViewById<TextView>(R.id.tvStatus) ?: return
+        tvStatus.text = status
+        tvStatus.setTextColor(ContextCompat.getColor(this, colorRes))
+        
+        val bgRes = if (colorRes == R.color.success_green) R.color.success_green_light else android.R.color.white
+        tvStatus.setBackgroundResource(bgRes)
+
+        if (isPulse) {
+            if (tvStatus.animation == null) startStatusPulse()
+        } else {
+            tvStatus.clearAnimation()
+            (tvStatus.parent as? View)?.clearAnimation()
+        }
     }
 
     private fun showScreen(screen: String) {
