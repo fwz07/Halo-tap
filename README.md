@@ -33,19 +33,33 @@ HaloTap is a robust, modern safety and tracking ecosystem. This Android applicat
 
 ## 🔌 Hardware Wiring (ESP32)
 
-To build the wearable device, connect the components as follows:
+To build the wearable device, connect the components as follows. Ensure a **Common Ground** between all modules.
 
-| Component | ESP32 Pin | Note |
-|-----------|-----------|------|
-| **SOS Button** | GPIO 4 | Connected to GND (Internal Pull-up used) |
-| **Status LED (Green)** | GPIO 2 | Pulsing = Online / GPS Active |
-| **Status LED (Red)** | GPIO 15 | Flashing = Setup Mode / Error |
-| **SIM800L TX** | GPIO 26 | RX2 |
-| **SIM800L RX** | GPIO 27 | TX2 |
-| **Neo-6M GPS TX** | GPIO 16 | RX1 |
-| **Neo-6M GPS RX** | GPIO 17 | TX1 |
+### **Connection Table**
 
-**Note on Power**: The SIM800L module requires a high-current power source (up to 2A bursts). It is recommended to use a 3.7V Li-ion battery or a buck converter set to 4.0V.
+| Component | Pin / Wire | Connects To | Important Notes |
+| :--- | :--- | :--- | :--- |
+| **SOS Button** | Leg 1 | ESP32 GPIO 4 | |
+| | Leg 2 | ESP32 GND | No resistor needed (code uses internal pullup). |
+| **Green LED** | Anode (Long Leg) | ESP32 GPIO 2 | Add a 220Ω or 330Ω resistor in series to prevent burnout. |
+| | Cathode (Short Leg) | ESP32 GND | |
+| **Red LED** | Anode (Long Leg) | ESP32 GPIO 15 | Add a 220Ω or 330Ω resistor in series. |
+| | Cathode (Short Leg) | ESP32 GND | |
+| **Neo-6M GPS** | VCC | ESP32 3.3V | Most Neo-6M modules prefer 3.3V, but check your specific board. |
+| | GND | ESP32 GND | |
+| | TX | ESP32 GPIO 16 | This is the ESP32's Hardware RX2 pin. |
+| | RX | ESP32 GPIO 17 | This is the ESP32's Hardware TX2 pin. |
+| **SIM800L (GSM)** | VCC | External Power (+) | MUST be 4.0V at 2 Amps. (e.g., from a DC-DC buck converter or Li-Ion battery). |
+| | GND | External GND (-) & ESP32 GND | CRITICAL: All grounds must be tied together for data to transfer. |
+| | TX | ESP32 GPIO 26 | |
+| | RX | ESP32 GPIO 27 | |
+| **Microphone** | Positive (Red) | SIM800L MIC+ | Standard electret condenser mic. |
+| | Negative (Black) | SIM800L MIC- | |
+
+### **Power Architecture**
+- **SIM800L**: ⚠️ **Must be powered directly by a 3.7V - 4.2V Li-ion Battery.** The ESP32 3.3V/5V pins cannot handle the 2A current spikes during network transmission.
+- **Neo-6M GPS**: Can be powered via the ESP32 **3.3V** pin.
+- **Common Ground**: All GND pins from the Battery, SIM800L, GPS, and ESP32 must be connected together for stable data transfer.
 
 ## 📦 Setup & Installation
 
