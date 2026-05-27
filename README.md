@@ -31,6 +31,22 @@ HaloTap is a robust, modern safety and tracking ecosystem. This Android applicat
 - **Google Maps SDK**: For spatial visualization and geofencing.
 - **Modern Android APIs**: Utilizing the latest Lifecycle, Permission, and Discovery APIs.
 
+## 🔌 Hardware Wiring (ESP32)
+
+To build the wearable device, connect the components as follows:
+
+| Component | ESP32 Pin | Note |
+|-----------|-----------|------|
+| **SOS Button** | GPIO 4 | Connected to GND (Internal Pull-up used) |
+| **Status LED (Green)** | GPIO 2 | Pulsing = Online / GPS Active |
+| **Status LED (Red)** | GPIO 15 | Flashing = Setup Mode / Error |
+| **SIM800L TX** | GPIO 26 | RX2 |
+| **SIM800L RX** | GPIO 27 | TX2 |
+| **Neo-6M GPS TX** | GPIO 16 | RX1 |
+| **Neo-6M GPS RX** | GPIO 17 | TX1 |
+
+**Note on Power**: The SIM800L module requires a high-current power source (up to 2A bursts). It is recommended to use a 3.7V Li-ion battery or a buck converter set to 4.0V.
+
 ## 📦 Setup & Installation
 
 1. **Clone the Project**:
